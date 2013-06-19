@@ -3,6 +3,7 @@
 
 CTcpSocket::CTcpSocket()
 {
+    isInProtoBuf_ = false;
 }
 
 void CTcpSocket::displayError(QAbstractSocket::SocketError socketError)
@@ -22,6 +23,7 @@ void CTcpSocket::displayError(QAbstractSocket::SocketError socketError)
         qDebug("The following error occurred: %s", (char*)(this->errorString().data()));
     }
 }
+
 bool CTcpSocket::tcpConnect(QString svrName, quint16 srvPort)
 {
     connect(this,SIGNAL(readyRead()),this,SLOT(tcpRead()));
@@ -39,31 +41,52 @@ bool CTcpSocket::tcpConnect(QString svrName, quint16 srvPort)
     return true;
 }
 
-void CTcpSocket::tcpWrite(char* buf, qint64 len)
+qint64 CTcpSocket::tcpWrite(char* buf, qint64 len)
 {
     //this->waitForBytesWritten();
-    write(buf, len);
+    while(len > 0) {
+       qint64 wLen = write(buf, len);
+       if(wLen < 0)
+           return -1;
+       len -= wLen;
+    }
+    return 0;
 }
 
 void CTcpSocket::tcpRead()
 {
     qDebug("readin==\n");
-    QByteArray datagram;
-    datagram.resize(this->bytesAvailable());
-    qDebug("bytesAvailable==%d\n", bytesAvailable());
+    char* buf = new char[bytesAvailable()];
+    assert(bytesAvailable() > 12);
+    qDebug("bytesAvailable==%s\n", buf);
 
-    this->read(datagram.data(), datagram.size());
-    QDataStream in(&datagram, QIODevice::ReadOnly);
+    this->read(buf, bytesAvailable());
 
-    int m1;
-    in >> m1;
-    qDebug("read1==%d\n", m1);
-    in >> m1;
-    qDebug("read2==%d\n", m1);
-    in >> m1;
-    qDebug("read3==%d\n", m1);
-    in >> m1;
-    qDebug("read4==%d\n", m1);
+    //mutexRead_->lock();
+    if(!isInProtoBuf_) {
+        data_ = new ProtocalData();
+        curDataLen_ = 0;
+        ++indexCmd_;
+        qDebug("callID==%d\n", *((int*)&buf[0]));
+        data_->callId_ = *((int*)&buf[0]);
+        qDebug("cmdID==%d\n", *((int*)&buf[4]));
+        data_->cmd_ = *((int*)&buf[4]);
+        qDebug("len==%d\n", *((int*)&buf[8]));
+        data_->length_ = *((int*)&buf[8]);
+
+        curDataLen_ += bytesAvailable() - 12;
+        data_->bypeArray_.append(&buf[12], curDataLen_);
+        qDebug("bytearray=len==%d==%s\n", data_->bypeArray_.length(), &buf[12]);
+
+        if(curDataLen_ < data_->length_)
+            isInProtoBuf_ = true;
+    } else {
+        //if(bytesAvailable() < )
+        data_->bypeArray_.append(buf, bytesAvailable());
+        curDataLen_ += bytesAvailable();
+        if(curDataLen_ >= data_->length_)
+            isInProtoBuf_ = true;
+    }
 
     qDebug("read ok!\n");
 }

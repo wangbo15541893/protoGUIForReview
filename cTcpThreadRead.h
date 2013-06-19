@@ -6,14 +6,8 @@
 #include <QMutex>
 #include <QByteArray>
 #include "mainwindow.h"
-
-class ProtocalData {
-    int callId_;
-    int cmd_;
-    int length_;
-    QByteArray bypeArray_; //pic == context multi cellphone support
-};
-
+#include "cTcpSocket.h"
+#include "dataType.h"
 
 class CTcpThreadRead : public QThread
 {
@@ -21,24 +15,31 @@ public:
     CTcpThreadRead();
     ~CTcpThreadRead();
 
-    void setTcpThreadEnv(TextEdit* edit, QQueue<ProtocalData*>* queue, QMutex* mutex)
-    { edit_ = edit; queue_ = queue; mutex_ = mutex; }
+    void setTcpThreadEnv(TextEdit* edit, QQueue<ProtocalData*>* queueRead, QMutex* mutexRead, QQueue<ProtocalWrite*>* queueWrite, QMutex* mutexWrite)
+    { edit_ = edit; tcpSocket.queueRead_ = queueRead_ = queueRead; tcpSocket.mutexRead_ = mutexRead_ = mutexRead; queueWrite_ = queueWrite; mutexWrite_ = mutexWrite;}
+    bool connectTcpServer(QString svrName, quint16 srvPort)
+    {
+        return tcpSocket.tcpConnect(svrName, srvPort); // "127.0.0.1", 8080);
+    }
 
-    void setTextEdit(TextEdit* edit) { edit_ = edit; };
-    void setProtocalDataQueue(QQueue<ProtocalData*>* queue) { queue = queue_; };
+  //  void setTextEdit(TextEdit* edit) { edit_ = edit; };
+  //  void setProtocalDataQueue(QQueue<ProtocalData*>* queue) { queue = queue_; };
 
     void sleep(unsigned long mSecs);
-
     void exitTcpThread(bool isContinue = false);
 
 protected:
     virtual void run();
+    void clearQueues();
 
 private:
     TextEdit * edit_;
-    QQueue<ProtocalData*>* queue_;
+    QQueue<ProtocalData*>* queueRead_;
+    QQueue<ProtocalWrite*>* queueWrite_;
     bool isContinue_;
-    QMutex* mutex_;
+    QMutex* mutexRead_;
+    QMutex* mutexWrite_;
+    CTcpSocket tcpSocket;
 };
 
 #endif // CTcpThreadRead_H

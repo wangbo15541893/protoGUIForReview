@@ -4,7 +4,6 @@
 #include "mainwindow.h"
 #include "amessage.pb.h"
 #include "cTcpThreadRead.h"
-#include "cTcpSocket.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,20 +13,20 @@ int main(int argc, char *argv[])
     mw.resize( 00, 00 );
 
     //Message msg1;
-
-    CTcpThreadRead tcpRead;
     mw.printText(QString("Andy test!\n"));
     mw.show();
 
-    CTcpSocket tcpSocket;
-    tcpSocket.tcpConnect("127.0.0.1", 8080);
+    CTcpThreadRead tcpRead;
+    QQueue<ProtocalData*> queueRead_;
+    QQueue<ProtocalWrite*> queueWrite_;
+    QMutex mutexRead_;
+    QMutex mutexWrite_;
 
-    tcpSocket.write("adfffffffffa");
-
-    tcpRead.setTextEdit(&mw);
+    tcpRead.setTcpThreadEnv(&mw, &queueRead_, &mutexRead_, &queueWrite_, &mutexWrite_);
+    tcpRead.connectTcpServer("192.168.1.100", 8080);
     tcpRead.start();
 
-    tcpRead.exitTcpThread();
+//    tcpRead.exitTcpThread();
 
 
     return a.exec();

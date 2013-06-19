@@ -16,14 +16,13 @@ SOURCES += main.cpp\
         mainwindow.cpp \
         message.pb.cc \
         cTcpThreadRead.cpp \
-        cTcpThreadwrite.cpp \
         cTcpSocket.cpp
 
 HEADERS += mainwindow.h \
         cTcpThreadRead.h \
-        cTcpThreadwrite.h \
         cTcpSocket.h \
-        message.pb.h
+        message.pb.h \
+    	dataType.h
 
 #win32:
 LIBS += -lprotobuf
